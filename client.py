@@ -107,7 +107,7 @@ while True:
         elif '$' in event:
             if event == '$FL':
                 if not flor_disabled:
-                    sg.Popup(window[event].get_text().lower(), title="Pontos", custom_text=("QUERO ", "NÃO QUERO"))
+                    sg.Popup(window[event].get_text().lower(), title="Pontos", custom_text=("OK ", "CONTRAFLOR"))
                 else:
                     sg.Popup(window[event].get_text().lower(), title="Pontos")
             else:
