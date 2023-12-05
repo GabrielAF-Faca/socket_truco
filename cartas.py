@@ -58,6 +58,20 @@ class Carta():
     def __str__(self):
         return f"({self.naipe} - {self.num}), {self.valor}"
 
+    @staticmethod
+    def get_nome(num, naipe):
+        naipes = {
+            'c' : 'copas',
+            'e' : 'espadas',
+            'o' : 'ouro',
+            'p' : 'paus'
+        }
+
+        return f'{num} de {naipes[naipe]}'
+
+    def get_own_nome(self):
+        return Carta.get_nome(self.num, self.naipe)
+
     def obter_numero_identificacao(self):
         naipes = ['e', 'p', 'o', 'c']
         num_carta = int(self.num)
