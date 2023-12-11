@@ -3,7 +3,7 @@ import socket
 import pickle
 from baralho import Baralho
 
-HOST = "10.121.1.171"
+HOST = "localhost"
 PORT = 8080
 rodadas = []
 pontosP1 = 0
@@ -38,53 +38,6 @@ class Cliente:
         data = self.conn.recv(1024)
         menssagem = data.decode("utf-8")
         return menssagem
-        
-
-valores_carta_truco = {
-    (1, 'e'): 13,
-    (2, 'e'): 8,
-    (3, 'e'): 9,
-    (4, 'e'): 0,
-    (5, 'e'): 1,
-    (6, 'e'): 2,
-    (7, 'e'): 11,
-    (10, 'e'): 4,
-    (11, 'e'): 5,
-    (12, 'e'): 6,
-
-    (1, 'p'): 12,
-    (2, 'p'): 8,
-    (3, 'p'): 9,
-    (4, 'p'): 0,
-    (5, 'p'): 1,
-    (6, 'p'): 2,
-    (7, 'p'): 3,
-    (10, 'p'): 4,
-    (11, 'p'): 5,
-    (12, 'p'): 6,
-
-    (1, 'o'): 7,
-    (2, 'o'): 8,
-    (3, 'o'): 9,
-    (4, 'o'): 0,
-    (5, 'o'): 1,
-    (6, 'o'): 2,
-    (7, 'o'): 10,
-    (10, 'o'): 4,
-    (11, 'o'): 5,
-    (12, 'o'): 6,
-
-    (1, 'c'): 7,
-    (2, 'c'): 8,
-    (3, 'c'): 9,
-    (4, 'c'): 0,
-    (5, 'c'): 1,
-    (6, 'c'): 2,
-    (7, 'c'): 3,
-    (10, 'c'): 4,
-    (11, 'c'): 5,
-    (12, 'c'): 6,
-}
 
 def turnoInicio():
     if len(rodadas)%2 == 0:
@@ -145,7 +98,7 @@ def pedido_valeQuatro(conn,rodada):
 
 
 
-
+'''
 def verificaVencedorTurno(carta1,carta2):
     if valores_carta_truco[carta1]> valores_carta_truco[carta2]:
         return 1 
@@ -155,7 +108,7 @@ def verificaVencedorTurno(carta1,carta2):
         return 0
     else: 
         return -5
-
+'''
 def gerarCartas():
     cartas_maos = Baralho.retorna6()
     cartas_p1 = cartas_maos[:3]
@@ -179,6 +132,7 @@ def recebeCartas(conn,adrr):
     carta =  pickle.loads(data)
     return carta
 
+'''
 def jogador1(conn,adrr,id):
     p1 = Cliente(conn,adrr)
     
@@ -272,25 +226,35 @@ def jogador2(conn,adrr,id):
             elif rodada.valeQuatro == True:
                 conn.send("vale Quatro")
 
+'''
 
 
-        
 
 
 
-def main():
-    with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as server:
-        server.bind((HOST, PORT))
-        server.listen()
+with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as server:
+    server.bind((HOST, PORT))
+    server.listen()
 
-        conn1, addr1 = server.accept()
-        t1 = threading.Thread(target=jogador1,args=(conn1,addr1,id))
-        id = 1
-        conn2, addr2 = server.accept()
-        t2 = threading.Thread(target=jogador2,args=(conn2,addr2,id))
+    conn, addr = server.accept()
+
+    with conn:
+        print(f"Connected by {addr}")
         while True:
-            t1.start()
-            t2.start()
+            data = conn.recv(1024)
+            if not data:
+                break
+            print(data)
+            #mensagem = input("Digite uma mensagem: ")
+            #s.sendto(bytes(mensagem.encode("UTF-8")), addr)
+
+    #t1 = threading.Thread(target=jogador1,args=(conn1,addr1,id))
+    #id = 1
+    #conn2, addr2 = server.accept()
+    #t2 = threading.Thread(target=jogador2,args=(conn2,addr2,id))
+    #while True:
+        #t1.start()
+        #t2.start()
         
         
 

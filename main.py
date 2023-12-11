@@ -42,19 +42,3 @@ jogada = {
     "responder_flor": -1,  # -1 = outro player n cantou flor, 0 = nao fazer nada, 1 = cantar contraflor
 }
 
-
-def iniciar_jogo(estado_do_jogo):
-    # Criar um objeto de Baralho
-    global baralho
-    baralho = Baralho()
-    # Inicializar o estado do jogo
-    # estado_do_jogo["quem_joga"] = 1  # Começa com o jogador 1
-
-def fim_de_jogo():
-    if estado_do_jogo["jogo"]["pontosP1"] == 24 or estado_do_jogo["jogo"]["pontosP1"] == 24:
-        return True
-
-
-baralho = Baralho()
-
-cartas_mao = baralho.retorna6()
