@@ -1,261 +1,126 @@
-import threading
-import socket
-import pickle
+
 from baralho import Baralho
+
+import threading
+
+import pickle
+import random
+import socket
 
 HOST = "localhost"
 PORT = 8080
-rodadas = []
-pontosP1 = 0
-pontosP2 = 0
-quero = False
 
-class Rodada:
-    def __init__(self):
-        self.turno = turnoInicio()
+baralho = Baralho()
 
-        self.rodadavalor = 0
-        cartasp1 = []
-        cartasp2 = []
-        self.flor = False
-        self.contraflor = False
-        self.envido = False
-        self.realEnvido = False
-        self.faltaEnvido =  False
-        self.truco =  False
-        self.retruco = False
-        self.valeQuatro = False
-        self.variavelDePassagem = 0
+estado_do_jogo = {
 
+    "rodada": {
+        "quem_comeca": 1,
+        "quem_joga": 1,
 
-class Cliente:
-    def __init__(self,conn,adrr):
-        self.conn = conn
-        self.adrr = adrr
-    def enviaMenssagem(self,menssagem):
-        self.conn.send(menssagem).encode("utf-8")
-    def recebeMenssagem(self,menssagem):
-        data = self.conn.recv(1024)
-        menssagem = data.decode("utf-8")
-        return menssagem
+        "cartas_p1": [],
+        "p1_jogadas": [],
+        "cartas_p2": [],
+        "p2_jogadas": [],
 
-def turnoInicio():
-    if len(rodadas)%2 == 0:
-        return 0
-    else:
-        return 1
+        "pedido_envido": 0,
+        "pedido_truco": 0,
 
-    
-def trocaTurno(turno):
-    if turno == 1:
-        turno = 0
-    else: turno = 1
+        "valor_rodada": 1
+    },
 
-def verificaMaiorPontuacao(pontos1,pontos2):
-    if pontos1>pontos2:
-        return 1
-    elif pontos2>pontos1:
-        return 2
-    elif pontos1==pontos2:
-        return 3
-    else: 
-        print("erro na contagem dos pontos")
-        return 4
+    "jogo": {
+        "rodada": 0,
 
-def pedido_envido(conn,rodada):
-    if len(rodadas) > 0:
-        return False
-    rodada.envido = True
-    conn.send("envido")
+        "pontosP1": 0,
+        "pontosP2": 0,
+        "fim_jogo": False
+    }
+}
 
 
-def pedido_realEnvido(conn,rodada):
-    if len(rodadas) > 0:
-        return False
-    rodada.realEnvido = True
-    conn.send("real envido")
+def jogador(conn, conn1, addr, id):
+    global estado_do_jogo, baralho
 
-def pedido_faltaEnvido(conn,rodada):
-    if len(rodadas) > 0:
-        return False
-    rodada.faltaEnvido = True
-    conn.send("falta envido")
+    with conn:
+        print(f"Connected by {addr}")
+        conn.send(pickle.dumps([id, estado_do_jogo]))
 
-def pedido_truco(conn,rodada):
-    if rodada.truco == True:
-        return False
-    rodada.truco = True
-    conn.send("truco")
-def pedido_retruco(conn,rodada):
-    if rodada.truco ==  False or rodada.retruco == True:
-        return False
-    rodada.retruco = True
-def pedido_valeQuatro(conn,rodada):
-    if rodada.truco == False or rodada.retruco == False or rodada.valeQuatro == True:
-        return False
-    rodada.valeQuatro = True
-    conn.send("vale Quatro")    
+        while True:
+            data = conn.recv(1024)
 
+            if not data:
+                continue
 
+            try:
+                data = pickle.loads(data)
+            except:
+                print("Erro no pickle")
 
-'''
-def verificaVencedorTurno(carta1,carta2):
-    if valores_carta_truco[carta1]> valores_carta_truco[carta2]:
-        return 1 
-    elif valores_carta_truco[carta1] < valores_carta_truco[carta2]:
-        return -1
-    elif valores_carta_truco[carta1] == valores_carta_truco[carta2]:
-        return 0
-    else: 
-        return -5
-'''
-def gerarCartas():
-    cartas_maos = Baralho.retorna6()
-    cartas_p1 = cartas_maos[:3]
-    cartas_p2 = cartas_maos[3:]
+            rodada = estado_do_jogo['rodada']
 
-    return cartas_p1, cartas_p2
+            try:
+                index = int(data['carta'])
 
-def enviarCartas(conn,adrr,id,cartas_p1,cartas_p2,rodada):
-    if id == 0:
-        conn.send(pickle.dump(cartas_p1),rodada.turno.encode("utf-8"))
-        id = 1
-    elif id == 1:
-        conn.send(pickle.dump(cartas_p2),rodada.turno.encode("utf-8"))
-        id = 0
+                rodada[f'p{id}_jogadas'].append(index)
 
-    else:
-        print("erro ao enviar cartas")
+                carta_atual = rodada[f'cartas_p{id}'][index]
+                cartas_jogadas = [index, carta_atual.__str__()]
+            except:
+                cartas_jogadas = []
 
-def recebeCartas(conn,adrr):
-    data  = conn.recv(1024)
-    carta =  pickle.loads(data)
-    return carta
+            valor_rodada = 0
 
-'''
-def jogador1(conn,adrr,id):
-    p1 = Cliente(conn,adrr)
-    
-    while True:
-        rodada = Rodada()
-        if rodada.turno %2 == 0:
-            pontosRodada = 0
-            cartas_p1, cartas_p2 = gerarCartas()
-            enviarCartas(conn,adrr,id,cartas_p1,cartas_p2,rodada)
-            
-            escolha  = p1.recebeMenssagem()
-            if escolha == 1:
-                pedido_envido(p1.conn,rodada)
-            elif escolha == 2:
-                pedido_realEnvido(p1.conn,rodada)
-            elif escolha == 3:
-                pedido_faltaEnvido(p1.conn,rodada)
-            elif escolha == 4:
-                pedido_truco(p1.conn,rodada)
-            elif escolha == 5:
-                pedido_retruco(p1.conn,rodada)
-            elif escolha == 6:
-                pedido_valeQuatro(p1.conn,rodada)
-            
-            
-            pontosP1 += pontosRodada
-            pontosRodada = 0
-            rodadas.append(rodada)
-        else:
-            if rodada.envido == True:
-                conn.send("envido") 
-            elif rodada.realenvido == True:
-                conn.send("envido")
-            elif rodada.faltaEnvido == True:
-                conn.send("faltaEnvido")
-            elif rodada.truco == True:
-                conn.send("truco")
-            elif rodada.retruco == True:
-                conn.send("retruco")
-            elif rodada.valeQuatro == True:
-                conn.send("vale Quatro")    
-            
+            pode_envido = True
 
+            if not rodada['pedido_envido'] or rodada['pedido_truco']:
+                pode_envido = False
 
-def jogador2(conn,adrr,id):
-    p2 = Cliente(conn,adrr)
-    
-    while True:
-        rodada = Rodada()
-        if not rodada.turno % 2 == 0:
-        
-            pontosRodada = 0
-            cartas_p1, cartas_p2 = gerarCartas()
-            enviarCartas(conn,adrr,id,cartas_p1,cartas_p2,rodada)
-            
-            escolha  = p2.recebeMenssagem()
-            if escolha == 1:
-                pedido_envido(p2.conn,rodada)
-            elif escolha == 2:
-                pedido_realEnvido(p2.conn,rodada)
-            elif escolha == 3:
-                pedido_faltaEnvido(p2.conn,rodada)
-            elif escolha == 4:
-                pedido_truco(p2.conn,rodada)
-            elif escolha == 5:
-                pedido_retruco(p2.conn,rodada)
-            elif escolha == 6:
-                pedido_valeQuatro(p2.conn,rodada)
-            pontosP2 += pontosRodada
-            pontosRodada = 0
-            rodadas.append(rodada)
+            if data['pediu_truco']:
+                print(data['pediu_truco'])
+                valor_rodada = data['pediu_truco']
+                estado_do_jogo['rodada']['pedido_truco'] = True
+                valor_rodada = estado_do_jogo['rodada']['valor_rodada']
 
-        else:
-            if rodada.envido == True:
-                conn.send("envido") 
-            elif rodada.realenvido == True:
-                conn.send("real envido")
-                opcao = p2.recebeMenssagem()
-                if opcao == "quero":
-                    conn.send("quero e canta")
-                    trocaTurno()
-                elif opcao == "não quero":
+                if valor_rodada == 1:
+                    estado_do_jogo['rodada']['valor_rodada'] = 2
+                elif valor_rodada == 2:
+                    estado_do_jogo['rodada']['valor_rodada'] = 3
+                elif valor_rodada == 3:
+                    estado_do_jogo['rodada']['valor_rodada'] = 4
 
-
-            elif rodada.faltaEnvido == True:
-                conn.send("faltaEnvido")
-            elif rodada.truco == True:
-                conn.send("truco")
-            elif rodada.retruco == True:
-                conn.send("retruco")
-            elif rodada.valeQuatro == True:
-                conn.send("vale Quatro")
-
-'''
-
-
-
+            conn1.send(pickle.dumps({
+                'id': id,
+                'cartas_jogadas': cartas_jogadas,
+                'ultima_mensagem': data['mensagem'],
+                'envido': data['pediu_envido'],
+                'truco': valor_rodada,
+                'pode_envido': pode_envido
+            }))
 
 
 with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as server:
     server.bind((HOST, PORT))
     server.listen()
 
+    ids = [1, 2]
+
+    random.shuffle(ids)
+
     conn, addr = server.accept()
+    conn1, addr1 = server.accept()
+    j1 = threading.Thread(target=jogador, args=(conn, conn1, addr, ids[0]))
+    j2 = threading.Thread(target=jogador, args=(conn1, conn, addr1, ids[1]))
 
-    with conn:
-        print(f"Connected by {addr}")
-        while True:
-            data = conn.recv(1024)
-            if not data:
-                break
-            print(data)
-            #mensagem = input("Digite uma mensagem: ")
-            #s.sendto(bytes(mensagem.encode("UTF-8")), addr)
+    baralho.embaralha()
 
-    #t1 = threading.Thread(target=jogador1,args=(conn1,addr1,id))
-    #id = 1
-    #conn2, addr2 = server.accept()
-    #t2 = threading.Thread(target=jogador2,args=(conn2,addr2,id))
-    #while True:
-        #t1.start()
-        #t2.start()
-        
-        
+    cartas = baralho.retorna6()
+    estado_do_jogo['rodada']['cartas_p1'] = cartas[3:]
+    estado_do_jogo['rodada']['cartas_p2'] = cartas[:3]
 
+    j1.start()
+    j2.start()
+
+    while not estado_do_jogo['jogo']['fim_jogo']:
+        baralho.embaralha()
 
